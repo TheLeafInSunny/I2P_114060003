@@ -1,0 +1,249 @@
+{
+  "map": [
+    {
+      "path": "map.tmx",
+      "teleport": [
+        {
+          "x": 24,
+          "y": 23,
+          "destination": "gym.tmx"
+        },
+        {
+          "x": 16,
+          "y": 28,
+          "destination": "secret_garden.tmx"
+        }
+      ],
+      "player": {
+        "x": 24.0,
+        "y": 30.0
+      },
+      "enemy_trainers": [
+        {
+          "x": 24.0,
+          "y": 29.0,
+          "classification": "stationary",
+          "facing": "DOWN",
+          "max_tiles": 2,
+          "sprite": "character/ow2.png"
+        },
+        {
+          "x": 54.0,
+          "y": 16.0,
+          "classification": "stationary",
+          "facing": "UP",
+          "max_tiles": 2,
+          "sprite": "character/ow3.png"
+        },
+        {
+          "x": 31.0,
+          "y": 31.0,
+          "classification": "stationary",
+          "facing": "UP",
+          "max_tiles": 2,
+          "sprite": "character/ow4.png"
+        },
+        {
+          "x": 10.0,
+          "y": 25.0,
+          "classification": "merchant",
+          "facing": "DOWN",
+          "max_tiles": 0,
+          "sprite": "character/ow5.png"
+        }
+      ]
+    },
+    {
+      "path": "gym.tmx",
+      "teleport": [
+        {
+          "x": 11,
+          "y": 14,
+          "destination": "map.tmx"
+        },
+        {
+          "x": 12,
+          "y": 14,
+          "destination": "map.tmx"
+        },
+        {
+          "x": 13,
+          "y": 14,
+          "destination": "map.tmx"
+        }
+      ],
+      "player": {
+        "x": 12.0,
+        "y": 14.0
+      },
+      "enemy_trainers": [
+        {
+          "x": 12.0,
+          "y": 6.0,
+          "classification": "stationary",
+          "facing": "DOWN",
+          "max_tiles": 0,
+          "sprite": "character/ow6.png"
+        }
+      ]
+    },
+    {
+      "path": "secret_garden.tmx",
+      "teleport": [
+        {
+          "x": 5,
+          "y": 5,
+          "destination": "map.tmx"
+        }
+      ],
+      "player": {
+        "x": 5.0,
+        "y": 5.0
+      },
+      "enemy_trainers": []
+    }
+  ],
+  "current_map": "map.tmx",
+  "player": {
+    "x": 23.962499999999977,
+    "y": 30.30625
+  },
+  "bag": {
+    "monsters": [
+      {
+        "name": "Pikachu",
+        "hp": 238,
+        "max_hp": 410,
+        "level": 29,
+        "sprite_path": "menu_sprites/menusprite1.png",
+        "element": "Normal",
+        "attack": 105,
+        "defense": 30,
+        "exp": 50,
+        "next_evo_level": 30,
+        "next_evo_sprite": "menu_sprites/menusprite2.png"
+      },
+      {
+        "name": "Charizard",
+        "hp": 110,
+        "max_hp": 200,
+        "level": 36,
+        "sprite_path": "menu_sprites/menusprite4.png",
+        "element": "Grass",
+        "attack": 40,
+        "defense": 20,
+        "exp": 0,
+        "next_evo_level": 40,
+        "next_evo_sprite": "menu_sprites/menusprite5.png"
+      },
+      {
+        "name": "Blastoise",
+        "hp": 66,
+        "max_hp": 180,
+        "level": 32,
+        "sprite_path": "menu_sprites/menusprite7.png",
+        "element": "Fire",
+        "attack": 30,
+        "defense": 40,
+        "exp": 50,
+        "next_evo_level": 35,
+        "next_evo_sprite": "menu_sprites/menusprite8.png"
+      },
+      {
+        "name": "Venusaur",
+        "hp": 90,
+        "max_hp": 160,
+        "level": 30,
+        "sprite_path": "menu_sprites/menusprite10.png",
+        "element": "Normal",
+        "attack": 35,
+        "defense": 30,
+        "exp": 0,
+        "next_evo_level": 35,
+        "next_evo_sprite": "menu_sprites/menusprite11.png"
+      },
+      {
+        "name": "Gengar",
+        "hp": 110,
+        "max_hp": 140,
+        "level": 28,
+        "sprite_path": "menu_sprites/menusprite12.png",
+        "element": "Water",
+        "attack": 45,
+        "defense": 10,
+        "exp": 0,
+        "next_evo_level": 0,
+        "next_evo_sprite": "menu_sprites/menusprite13.png"
+      },
+      {
+        "name": "Dophain",
+        "hp": 180,
+        "max_hp": 300,
+        "level": 40,
+        "sprite_path": "menu_sprites/menusprite13.png",
+        "element": "Water",
+        "attack": 80,
+        "defense": 30,
+        "exp": 0,
+        "next_evo_level": 45,
+        "next_evo_sprite": "menu_sprites/menusprite14.png"
+      },
+      {
+        "name": "Wild Gengar",
+        "element": "Normal",
+        "sprite_path": "menu_sprites/menusprite5.png",
+        "level": 28,
+        "max_hp": 310,
+        "hp": 310,
+        "attack": 66,
+        "defense": 33,
+        "exp": 0
+      }
+    ],
+    "items": [
+      {
+        "name": "Potion",
+        "count": 9,
+        "sprite_path": "ingame_ui/potion.png",
+        "effect_type": "HEAL",
+        "value": 150
+      },
+      {
+        "name": "Strength Potion",
+        "count": 4,
+        "sprite_path": "ingame_ui/potion.png",
+        "effect_type": "ATK_UP",
+        "value": 10
+      },
+      {
+        "name": "Defense Potion",
+        "count": 10,
+        "sprite_path": "ingame_ui/potion.png",
+        "effect_type": "DEF_UP",
+        "value": 10
+      },
+      {
+        "name": "Coins",
+        "count": 1050,
+        "sprite_path": "ingame_ui/coin.png",
+        "effect_type": "NONE",
+        "value": 0
+      },
+      {
+        "name": "Pokeball",
+        "count": 10,
+        "sprite_path": "ingame_ui/ball.png",
+        "effect_type": "NONE",
+        "value": 0
+      }
+    ]
+  },
+  "quest": {
+    "name": "Gym Challenge",
+    "description": "Defeat 5 Enemies",
+    "target_count": 5,
+    "current_count": 0,
+    "reward_coins": 1000,
+    "is_completed": false
+  }
+}
