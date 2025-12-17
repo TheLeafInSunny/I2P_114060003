@@ -271,7 +271,7 @@ class BattleScene(Scene):
         bag_items = self.game_manager.bag._items_data
         self.current_bag_items = [it for it in bag_items if it.get("effect_type", "NONE") != "NONE"]
         
-        start_x, start_y = 220, GameSettings.SCREEN_HEIGHT - 200
+        start_x, start_y = 300,150
         for i, item in enumerate(self.current_bag_items):
             btn = Button("UI/button_save.png", "UI/button_save_hover.png",
                          start_x, start_y - i * 70, 60, 60, 
@@ -490,9 +490,13 @@ class BattleScene(Scene):
                     screen.blit(txt, (btn.hitbox.right + 15, btn.hitbox.centery - 10))
 
         elif self.state == "POKEMON_MENU":
-            menu_bg = pg.Rect(380, GameSettings.SCREEN_HEIGHT - 450, 350, 350)
+            # [修改] 加大背景框 (x=250, y=100, 寬=800, 高=500)
+            menu_bg = pg.Rect(380, GameSettings.SCREEN_HEIGHT - 450, 400, 500) 
+            
             pg.draw.rect(screen, (240, 240, 240), menu_bg)
             pg.draw.rect(screen, (0,0,0), menu_bg, 2)
+           
+            
             screen.blit(self.font.render("Switch Pokemon", True, (0,0,0)), (menu_bg.x+20, menu_bg.y+20))
             self.btn_back.hitbox.x = menu_bg.right - 60
             self.btn_back.hitbox.y = menu_bg.top + 10

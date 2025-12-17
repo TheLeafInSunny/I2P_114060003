@@ -20,8 +20,8 @@
         }
       ],
       "player": {
-        "x": 25.0,
-        "y": 27.0
+        "x": 24.0,
+        "y": 30.0
       },
       "enemy_trainers": [
         {
@@ -124,10 +124,10 @@
       ]
     }
   ],
-  "current_map": "shop.tmx",
+  "current_map": "map.tmx",
   "player": {
-    "x": 4.0,
-    "y": 5.0
+    "x": 24.006250000000016,
+    "y": 30.131250000000144
   },
   "bag": {
     "monsters": [
@@ -159,7 +159,7 @@
       },
       {
         "name": "Blastoise",
-        "hp": 0,
+        "hp": 90,
         "max_hp": 180,
         "level": 32,
         "sprite_path": "menu_sprites/menusprite7.png",
@@ -231,7 +231,7 @@
       },
       {
         "name": "Strength Potion",
-        "count": 6,
+        "count": 7,
         "sprite_path": "ingame_ui/potion.png",
         "effect_type": "ATK_UP",
         "value": 10
