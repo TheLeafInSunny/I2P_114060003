@@ -67,10 +67,12 @@ class GameScene(Scene):
     sprite_online: Sprite
     
     def __init__(self):
+        self.chat_history = []
         # ===== [New] 對話框系統 (Dialogue System) =====
         self.is_dialogue_open = False
         self.dialogue_rect = pg.Rect(240, 450, 800, 200) # 下方的長條對話框
         self.pending_quest_data = {} # 暫存「等待玩家同意」的任務資料
+
 
         # 守護小精靈設定
         self.fairy_pos = [0, 0] # 小精靈現在的位置
@@ -190,13 +192,30 @@ class GameScene(Scene):
             {"name": "Defense Potion", "price": 100, "sprite_path": "ingame_ui/potion.png", "effect_type": "DEF_UP", "value": 10},
             {"name": "Guardian Fairy", "price": 300, "sprite_path": "ingame_ui/star.png", "effect_type": "REVIVE", "value": 1}
         ]
-
+        # 在 __init__ 裡面找到這段並覆蓋
+        self.shop_items = [
+            {"name": "Potion", "price": 50, "sprite_path": "ingame_ui/potion.png", "effect_type": "HEAL", "value": 150,
+             "desc": "Restores 150 HP. Essential for adventure."},
+            
+            {"name": "Pokeball", "price": 200, "sprite_path": "ingame_ui/ball.png", "effect_type": "NONE", "value": 0,
+             "desc": "A tool for catching wild Pokemon."},
+            
+            {"name": "Strength Potion", "price": 100, "sprite_path": "ingame_ui/potion.png", "effect_type": "ATK_UP", "value": 10,
+             "desc": "Increases Attack power temporarily."},
+            
+            {"name": "Defense Potion", "price": 100, "sprite_path": "ingame_ui/potion.png", "effect_type": "DEF_UP", "value": 10,
+             "desc": "Increases Defense power temporarily."},
+            
+            {"name": "Guardian Fairy", "price": 300, "sprite_path": "ingame_ui/star.png", "effect_type": "REVIVE", "value": 1,
+             "desc": "Revives you once when you faint. Very rare!"}
+        ]
+        self.refresh_shop_buttons()
         # [mine] 導航系統初始化
         self.is_nav_open = False
         self.nav_buttons = []
         # 定義導航地點 (座標要對應 map.tmx 的邏輯位置)
         self.nav_places = [
-            {"name": "Merchant", "x": 10, "y": 25},
+            {"name": "Shop", "x": 55, "y": 13},
             {"name": "Gym", "x": 24, "y": 23},
             {"name": "Garden", "x": 16, "y": 28},
             {"name": "Home", "x": 16, "y": 30}
@@ -221,8 +240,8 @@ class GameScene(Scene):
         for i, item in enumerate(self.shop_items):
             # 這裡使用 lambda 的小技巧來綁定 item
             btn = Button(
-                img_path="UI/button_save.png",  
-                img_hovered_path="UI/button_save_hover.png",
+                img_path="UI/button_shop.png",  
+                img_hovered_path="UI/button_shop_hover.png",
                 x=self.shop_rect.x + 350,
                 y=self.shop_rect.y + 100 + i * 80,
                 width=60,
@@ -355,6 +374,17 @@ class GameScene(Scene):
         )
         
         self.online_player_states = {}
+     # [New] 定義關閉時的動作：清除歷史紀錄
+        def on_close_chat():
+            self.chat_history = [] # 清空列表
+            # input_manager.clear_buffer() # 如果需要也可以清空輸入緩衝
+
+        # [Modified] 初始化 Overlay 時傳入 on_close_callback
+        self.chat_overlay = ChatOverlay(
+            send_callback=on_send_chat,
+            get_messages=on_get_messages,
+            on_close_callback=on_close_chat # 綁定剛剛定義的函數
+        )
  
 
     def open_quest(self):
@@ -493,8 +523,8 @@ class GameScene(Scene):
         if self.shop_mode == "BUY":
             # 建立原本的購買按鈕
             for i, item in enumerate(self.shop_items):
-                btn = Button("UI/button_save.png", "UI/button_save_hover.png", 
-                             start_x, start_y + i * 80, 60, 50, 
+                btn = Button("UI/button_shop.png", "UI/button_shop_hover.png", 
+                             start_x, start_y + i * 80, 60, 60, 
                              lambda it=item: self.buy_item(it))
                 self.shop_dynamic_buttons.append(btn)
                 
@@ -514,7 +544,7 @@ class GameScene(Scene):
                 else:
                     # 3. 如果商店沒賣這個 (例如稀有道具)，給個預設值
                     price=10
-                btn = Button("UI/button_save.png", "UI/button_save_hover.png", 
+                btn = Button("UI/button_shop.png", "UI/button_shop_hover.png", 
                              start_x, start_y + i * 80, 60, 60, 
                              lambda n=item["name"], p=price: self.sell_item(n, p))
                 self.shop_dynamic_buttons.append(btn)
@@ -549,22 +579,31 @@ class GameScene(Scene):
         cost = item_info["price"]
         
         if current_money >= cost:
-            # 2. 扣錢
+            # 2. 先扣錢
             coins_data["count"] = current_money - cost
             
-            # [Modified] 3. 給道具 (特殊處理小精靈)
+            # [Modified] 3. 給道具 (針對精靈做特殊處理)
             if item_info["name"] == "Guardian Fairy":
+                # 檢查是否已經有了
                 if not self.game_manager.has_fairy:
+                    # A. 成功購買
                     self.game_manager.has_fairy = True
-                    self.spawn_floating_text("Fairy Equipped!", 400, 300, (0, 255, 255))
-                    Logger.info("Bought Guardian Fairy!")
+                    
+                    # === [提示] 這裡加入提示訊息 ===
+                    # 參數：文字, X座標, Y座標, 顏色(青色)
+                    self.spawn_floating_text("★ Fairy Equipped! ★", 400, 300, (0, 255, 255))
+                    Logger.info("Bought Guardian Fairy successfully!")
+                    
                 else:
-                    # 如果已經有了，就把錢退回去 (不扣錢)
-                    coins_data["count"] += cost
-                    self.spawn_floating_text("You already have one!", 400, 300, (255, 0, 0))
-                    return
+                    # B. 已經有了 (退款 + 失敗提示)
+                    coins_data["count"] += cost # 把錢加回去
+                    
+                    # === [提示] 失敗提示 ===
+                    self.spawn_floating_text("You already have one!", 400, 300, (255, 50, 50))
+                    Logger.info("Already has fairy, purchase cancelled.")
+                    return # 結束，不執行下面的存檔
             else:
-                # ... (原本處理一般道具的邏輯：檢查背包、堆疊數量...) ...
+                # ... (原本處理一般道具的邏輯保持不變) ...
                 target_item = next((x for x in bag._items_data if x["name"] == item_info["name"]), None)
                 if target_item:
                     target_item["count"] = target_item.get("count", 0) + 1
@@ -576,8 +615,13 @@ class GameScene(Scene):
                         "effect_type": item_info.get("effect_type", "NONE"),
                         "value": item_info.get("value", 0)
                     })
-            
+                
+                # 一般道具購買成功的提示 (選擇性)
+                self.spawn_floating_text(f"+1 {item_info['name']}", 400, 300, (255, 255, 0))
+
+            # 4. 存檔
             self.game_manager.save("saves/game0.json")
+            
 
     # [Fix] 補上這個方法，解決 AttributeError
     def spawn_floating_text(self, text, x, y, color=(255, 255, 0)):
@@ -669,10 +713,37 @@ class GameScene(Scene):
                 )
             return # 阻擋後續邏輯
 
-        # 按 T 或 Enter 打開聊天
-        if input_manager.key_pressed(pg.K_RETURN) or input_manager.key_pressed(pg.K_t):
+        # [Fix] 1. 按 Enter 打開聊天室 (最少改動版)
+        if input_manager.key_down(pg.K_RETURN):
             self.chat_overlay.open()
-            # 不 return，讓這一幀繼續執行
+        
+        # Check if there is assigned next scene
+        self.game_manager.try_switch_map()
+ 
+        # [New] 1. 聊天室開啟時的邏輯
+        if self.chat_overlay.is_open:
+            self.chat_overlay.update(dt)
+
+            # 按 X 強制關閉聊天室
+            # 因為下面有 return，所以關閉的邏輯一定要寫在這裡面！
+            if input_manager.key_down(pg.K_ESCAPE):
+                self.chat_overlay.close()
+
+            # 打字時阻擋移動，但保持連線心跳
+            if self.online_manager and self.game_manager.player:
+                self.online_manager.update(
+                    self.game_manager.player.position.x, 
+                    self.game_manager.player.position.y,
+                    self.game_manager.current_map.path_name,
+                    self.game_manager.player.direction.name,
+                    None
+                )
+            
+            #這裡 return 了，所以如果沒在上面寫關閉邏輯，程式就會永遠卡在這裡
+            return
+
+        # ... (後面原本的 Enter 開啟邏輯保持不變) ...
+
         
         # Check if there is assigned next scene
         self.game_manager.try_switch_map()
@@ -905,18 +976,33 @@ class GameScene(Scene):
 #[mine]
             # 玩家按 SPACE 進戰鬥
         # [Modified] 玩家按 SPACE 互動 (戰鬥 或 商店)
+        # [Modified] 玩家按 SPACE 互動 (戰鬥 或 商店)
         for enemy in self.game_manager.current_enemy_trainers:
-            if enemy.detected:
-                if input_manager.key_pressed(pg.K_SPACE):
-                    from src.entities.enemy_trainer import EnemyTrainerClassification
+            
+            # 1. 手動計算距離 (因為隔著櫃台，原本的 detected 判定會失效)
+            p_pos = self.game_manager.player.position
+            e_pos = enemy.position
+            # 歐幾里得距離公式
+            dist = ((p_pos.x - e_pos.x)**2 + (p_pos.y - e_pos.y)**2)**0.5
+            
+            # 2. 判斷是否按下空白鍵
+            if input_manager.key_pressed(pg.K_SPACE):
+                from src.entities.enemy_trainer import EnemyTrainerClassification
+                
+                # 3. [關鍵修改] 判定條件放寬
+                # 如果是商人 (MERCHANT)，只要距離在 2.5 格內 (TILE_SIZE * 2.5) 就允許互動
+                is_merchant = (enemy.classification == EnemyTrainerClassification.MERCHANT)
+                in_range_merchant = (is_merchant and dist <= GameSettings.TILE_SIZE * 2.5)
+                
+                # 條件：(原本的接觸判定) OR (你是商人且你在兩格半內)
+                if enemy.detected or in_range_merchant:
                     
-                    # 檢查是否為商人
-                    if enemy.classification == EnemyTrainerClassification.MERCHANT:
+                    # --- 下面是原本的互動邏輯 ---
+                    if is_merchant:
                         self.is_shop_open = True
                     else:
-                    # 道館館主互動
+                        # 道館館主互動
                         if self.game_manager.current_map.path_name == "gym.tmx":
-                            # [Modified] 不再直接接任務，而是跳出對話框詢問
                             self.prompt_quest_dialogue(
                                 name="Gym Challenge",
                                 description="Defeat 5 Enemies",
@@ -925,7 +1011,7 @@ class GameScene(Scene):
                             )
                             return
 
-                        # [Fix] 進戰鬥前先存檔
+                        # 進戰鬥前先存檔
                         self.game_manager.save("saves/game0.json")
                         GameSettings.BATTLE_TYPE = "TRAINER"
                         scene_manager.change_scene("battle")
@@ -1210,70 +1296,162 @@ class GameScene(Scene):
             # 呼叫你原本寫好的 helper function 畫內容
             self.draw_bag_overlay_contents(screen)
 
-        # --- 商店介面 (Shop Overlay) [這次任務的重點] ---
+        # --- 商店介面 (Shop Overlay) [美化版] ---
         if self.is_shop_open:
+            # 1. 全螢幕變暗 (更深一點更有質感)
             dim = pg.Surface((GameSettings.SCREEN_WIDTH, GameSettings.SCREEN_HEIGHT), pg.SRCALPHA)
-            dim.fill((0, 0, 0, 150))
+            dim.fill((0, 0, 0, 180)) 
             screen.blit(dim, (0, 0))
 
-            # 商店背景框
-            pg.draw.rect(screen, (255, 245, 220), self.shop_rect)
-            pg.draw.rect(screen, (139, 69, 19), self.shop_rect, 4)
+            # === 主面板樣式設定 ===
+            panel_bg = (240, 240, 235)    # 米白底
+            border_col = (60, 60, 60)     # 深灰框
+            highlight_col = (255, 230, 150) # 選中時的亮黃色
             
-            # 標題 (Buy Mode / Sell Mode)
-            mode_str = "BUY MODE" if self.shop_mode == "BUY" else "SELL MODE"
-            title = self.font_small.render(f"Poke Mart - {mode_str}", True, (139, 69, 19))
-            screen.blit(title, (self.shop_rect.x + 30, self.shop_rect.y + 30))
+            # 2. 畫主視窗
+            pg.draw.rect(screen, panel_bg, self.shop_rect, 0, border_radius=15)
+            pg.draw.rect(screen, border_col, self.shop_rect, 4, border_radius=15)
             
-            # 顯示持有金錢
+            # 3. 標題與分隔線
+            mode_str = "BUY ITEMS" if self.shop_mode == "BUY" else "SELL ITEMS"
+            title = self.font_quest.render(f"Poke Mart - {mode_str}", True, border_col)
+            screen.blit(title, (self.shop_rect.x + 40, self.shop_rect.y + 30))
+            
+            # 畫一條橫線分隔標題
+            pg.draw.line(screen, border_col, (self.shop_rect.x + 20, self.shop_rect.y + 70), (self.shop_rect.right - 20, self.shop_rect.y + 70), 2)
+
+            # 4. 顯示金錢 (右上角金色區塊)
             coins = next((x.get("count", 0) for x in self.game_manager.bag._items_data if x["name"] == "Coins"), 0)
-            money_txt = self.font_small.render(f"My Money: ${coins}", True, (0, 100, 0))
-            screen.blit(money_txt, (self.shop_rect.right - 350, self.shop_rect.y + 30))
+            money_txt = self.font_small.render(f"$ {coins}", True, (255, 255, 255))
+            # 畫金色背景
+            pg.draw.rect(screen, (218, 165, 32), (self.shop_rect.right - 150, self.shop_rect.y + 25, 120, 35), 0, border_radius=8)
+            screen.blit(money_txt, (self.shop_rect.right - 140, self.shop_rect.y + 35))
+
+            # === [左區] 商品列表 ===
+            list_start_x = self.shop_rect.x + 50
             
-            # 繪製分頁切換按鈕
+            # 用來記住滑鼠現在指到哪個商品 (給右邊顯示詳情用)
+            hovered_item_data = None 
+
+            if self.shop_mode == "BUY":
+                for i, btn in enumerate(self.shop_dynamic_buttons):
+                    # 取得對應的商品資料
+                    item = self.shop_items[i]
+                    
+                    # 偵測滑鼠懸停 -> 畫底色 + 記住資料
+                    if btn.hitbox.collidepoint(input_manager.mouse_pos):
+                        pg.draw.rect(screen, highlight_col, (list_start_x - 10, btn.hitbox.y - 5, 320, 60), 0, border_radius=5)
+                        hovered_item_data = item
+                    
+                    # 畫按鈕
+                    btn.draw(screen)
+                    
+                    # 畫文字 (名字 + 價格)
+                    name_txt = self.font_small.render(item["name"], True, (0, 0, 0))
+                    price_txt = self.font_small.render(f"${item['price']}", True, (0, 100, 0))
+                    screen.blit(name_txt, (list_start_x, btn.hitbox.y + 15))
+                    screen.blit(price_txt, (list_start_x + 200, btn.hitbox.y + 15))
+
+            elif self.shop_mode == "SELL":
+                 # 賣東西模式的列表繪製 (同理)
+                 bag_items = [it for it in self.game_manager.bag._items_data if it["name"] != "Coins"]
+                 for i, btn in enumerate(self.shop_dynamic_buttons):
+                     if i < len(bag_items):
+                         item = bag_items[i]
+                         if btn.hitbox.collidepoint(input_manager.mouse_pos):
+                             pg.draw.rect(screen, highlight_col, (list_start_x - 10, btn.hitbox.y - 5, 320, 60), 0, border_radius=5)
+                             hovered_item_data = item
+                         
+                         btn.draw(screen)
+                         # 顯示持有數量
+                         txt = self.font_small.render(f"{item['name']} x{item.get('count',0)}", True, (0,0,0))
+                         screen.blit(txt, (list_start_x, btn.hitbox.y + 15))
+
+            # === [右區] 詳細資訊卡片 (Detail Panel) ===
+            # 畫一個深色底框
+            info_rect = pg.Rect(self.shop_rect.right - 350, self.shop_rect.y + 100, 300, 350)
+            pg.draw.rect(screen, (230, 230, 220), info_rect, 0, border_radius=10) # 淺灰底
+            pg.draw.rect(screen, border_col, info_rect, 2, border_radius=10)      # 深灰框
+
+            if hovered_item_data:
+                # 1. 顯示大圖示 (放大版)
+                if hovered_item_data.get("sprite_path"):
+                    try:
+                        img = resource_manager.get_image(hovered_item_data["sprite_path"])
+                        img = pg.transform.scale(img, (64, 64)) 
+                        img_rect = img.get_rect(center=(info_rect.centerx, info_rect.y + 60))
+                        screen.blit(img, img_rect)
+                    except: pass
+                
+                # 2. 商品名稱
+                name_surf = self.font_quest.render(hovered_item_data["name"], True, border_col)
+                name_rect = name_surf.get_rect(center=(info_rect.centerx, info_rect.y + 110))
+                screen.blit(name_surf, name_rect)
+                
+                # === [新增] 3. 顯示價格 (根據買或賣模式顯示不同價格) ===
+                price_text = ""
+                price_color = (0, 0, 0)
+                
+                if self.shop_mode == "BUY":
+                    # 買東西：直接顯示 price
+                    p = hovered_item_data.get("price", 0)
+                    price_text = f"Price: ${p}"
+                    price_color = (200, 0, 0) # 紅色代表花錢
+                else:
+                    # 賣東西：要重新計算賣價 (原價的一半)
+                    # 先去商店列表找原價
+                    original_item = next((x for x in self.shop_items if x["name"] == hovered_item_data["name"]), None)
+                    if original_item:
+                        sell_price = original_item["price"] // 2
+                    else:
+                        sell_price = 10 # 沒賣的東西給預設價
+                    
+                    price_text = f"Selling Price: ${sell_price}"
+                    price_color = (0, 150, 0) # 綠色代表賺錢
+
+                # 畫出價格
+                price_surf = self.font_small.render(price_text, True, price_color)
+                price_rect = price_surf.get_rect(center=(info_rect.centerx, info_rect.y + 140))
+                screen.blit(price_surf, price_rect)
+
+                # 4. 描述文字 (往下移一點，避開價格)
+                # 嘗試取得描述，如果是背包物品可能沒有 desc，就去商店列表找
+                desc = hovered_item_data.get("desc", "")
+                if not desc:
+                    found = next((x for x in self.shop_items if x["name"] == hovered_item_data["name"]), None)
+                    if found: desc = found.get("desc", "")
+                
+                if not desc: desc = "No description."
+
+                # 自動換行
+                words = desc.split(' ')
+                lines = []
+                current_line = ""
+                for word in words:
+                    if len(current_line + word) < 25:
+                        current_line += word + " "
+                    else:
+                        lines.append(current_line)
+                        current_line = word + " "
+                lines.append(current_line)
+                
+                for idx, line in enumerate(lines):
+                    line_surf = self.font_small.render(line, True, (80, 80, 80))
+                    screen.blit(line_surf, (info_rect.x + 20, info_rect.y + 170 + idx * 20)) # y 改成 170
+
+            else:
+                # 沒選中時的提示
+                hint = self.font_small.render("Hover over an item...", True, (150, 150, 150))
+                screen.blit(hint, (info_rect.centerx - 60, info_rect.centery))
+
+            # 5. 繪製底部按鈕 (Tab 和 Close)
             self.btn_tab_buy.draw(screen)
             self.btn_tab_sell.draw(screen)
-            # 補上按鈕文字
-            screen.blit(self.font_small.render("Buy", True, (0, 0, 0)), (self.btn_tab_buy.hitbox.x + 35, self.btn_tab_buy.hitbox.y + 10))
-            screen.blit(self.font_small.render("Sell", True, (0, 0, 0)), (self.btn_tab_sell.hitbox.x + 35, self.btn_tab_sell.hitbox.y + 10))
-
-            # 關閉按鈕
             self.button_shop_close.draw(screen)
             
-            # 繪製商品列表 (根據模式不同)
-            start_y = self.shop_rect.y + 120
-            
-            if self.shop_mode == "BUY":
-                for i, item in enumerate(self.shop_items):
-                    # 顯示商品資訊
-                    name = item["name"]
-                    price = item["price"]
-                    txt = self.font_small.render(f"{name}  ${price}", True, (0, 0, 0))
-                    screen.blit(txt, (self.shop_rect.x + 50, start_y + i * 80 + 15))
-                    
-                    # 繪製「購買」按鈕
-                    if i < len(self.shop_dynamic_buttons):
-                        self.shop_dynamic_buttons[i].draw(screen)
-                        
-            elif self.shop_mode == "SELL":
-                # 顯示可賣物品資訊
-                bag_items = [it for it in self.game_manager.bag._items_data if it["name"] != "Coins"]
-                for i, item in enumerate(bag_items):
-                    name = item["name"]
-                    count = item.get("count", 0)
-                    # [修改點] 這裡也要動態計算價格，不要寫死 100
-                    found_item = next((x for x in self.shop_items if x["name"] == name), None)
-                    if found_item:
-                        price = found_item["price"] // 2  # 記得也要除以 2
-                    else:
-                        price = 10
-                    
-                    txt = self.font_small.render(f"{name} x{count}  (Sell: ${price})", True, (0, 0, 0))
-                    screen.blit(txt, (self.shop_rect.x + 50, start_y + i * 80 + 15))
-                    
-                    # 繪製「賣出」按鈕
-                    if i < len(self.shop_dynamic_buttons):
-                        self.shop_dynamic_buttons[i].draw(screen)
+            # Tab 文字
+            screen.blit(self.font_small.render("Buy", True, (0,0,0)), (self.btn_tab_buy.hitbox.x+15, self.btn_tab_buy.hitbox.y+20))
+            screen.blit(self.font_small.render("Sell", True, (0,0,0)), (self.btn_tab_sell.hitbox.x+15, self.btn_tab_sell.hitbox.y+20))
 
         if not self.is_overlay_open and not self.is_shop_open and not self.is_setting_open:
             self.draw_minimap(screen)

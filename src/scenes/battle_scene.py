@@ -222,40 +222,49 @@ class BattleScene(Scene):
 
     def enemy_turn(self):
         pg.time.delay(500)
+        
+        # 1. 計算並扣除傷害
         dmg = self.calculate_damage(self.enemy_mon, self.player_mon, False)
         self.player_mon["hp"] -= dmg
         self.battle_msg = f"Enemy hit you! (-{dmg})"
         self.player_shake = 0.5
         
+        # 2. [Modified] 判斷死亡與復活
         if self.player_mon["hp"] <= 0:
-            # 1. 檢查是否有守護小精靈
-            # (使用 getattr 避免如果 GameManager 沒存這個變數會報錯)
+            # 確保 HP 不會變成負數
+            self.player_mon["hp"] = 0
+            
+            # --- 檢查復活 ---
             if getattr(self.game_manager, "has_fairy", False):
-                # 2. 消耗小精靈
+                # A. 消耗精靈
                 self.game_manager.has_fairy = False
+                Logger.info("Guardian Fairy Used!")
                 
-                # 3. [Fix] 修正變數名稱與字典寫法
-                max_hp = self.player_mon.get("max_hp", 100)
-                self.player_mon["hp"] = int(max_hp * 0.5) # 回血 50%
+                # B. [Fix] 這裡改對了！使用 player_mon 字典
+                max_hp = int(self.player_mon.get("max_hp", 100))
+                recover_amount = int(max_hp * 0.5)
+                self.player_mon["hp"] = recover_amount
                 
-                # 4. 設定特效與訊息
-                self.battle_msg = "Guardian Fairy sacrificed to revive you!"
-                self.revive_timer = 2.0 # 觸發 draw 裡面的特效，顯示 2 秒
+                # C. 設定特效與訊息
+                self.battle_msg = "Guardian Fairy Revived You!"
+                self.revive_timer = 2.0 
                 
-                # 5. 強制結束敵人回合，輪回玩家
+                # D. 切回玩家回合
                 self.state = "PLAYER_TURN"
-                
+                return # 結束函式，不執行死亡邏輯
+            # ----------------
+            
+            # 沒精靈，真的死了
+            self.battle_msg = f"{self.player_mon['name']} fainted!"
+            alive = [m for m in self.game_manager.bag._monsters_data if m.get("hp",0) > 0]
+            if alive:
+                self.state = "POKEMON_MENU"
+                self._refresh_pokemon_buttons()
             else:
-                # === 原本的死亡邏輯 ===
-                self.player_mon["hp"] = 0
-                self.battle_msg = f"{self.player_mon['name']} fainted!"
-                alive = [m for m in self.game_manager.bag._monsters_data if m.get("hp",0) > 0]
-                if alive:
-                    self.state = "POKEMON_MENU"
-                    self._refresh_pokemon_buttons()
-                else:
-                    self.state = "LOSE"
-    # ================= 道具與換人 =================
+                self.state = "LOSE"
+        else:
+            # 沒死，換玩家回合
+            self.state = "PLAYER_TURN"
 
     def _refresh_item_buttons(self):
         self.item_buttons = []

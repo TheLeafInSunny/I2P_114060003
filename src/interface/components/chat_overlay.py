@@ -4,7 +4,8 @@ from typing import Optional, Callable, List, Dict
 from .component import UIComponent
 from src.core.services import input_manager
 from src.utils import Logger
-
+from src.interface.components.button import Button
+from src.utils import GameSettings
 
 class ChatOverlay(UIComponent):
     """Lightweight chat UI similar to Minecraft: toggle with a key, type, press Enter to send."""
@@ -23,7 +24,8 @@ class ChatOverlay(UIComponent):
         send_callback: Callable[[str], bool] | None = None,
         get_messages: Callable[[int], list[dict]] | None = None,
         *,
-        font_path: str = "assets/fonts/Minecraft.ttf"
+        font_path: str = "assets/fonts/Minecraft.ttf",
+        on_close_callback=None
     ) -> None:
         self.is_open = False
         self._input_text = ""
@@ -32,6 +34,17 @@ class ChatOverlay(UIComponent):
         self._just_opened = False
         self._send_callback = send_callback
         self._get_messages = get_messages
+        self.on_close_callback = on_close_callback # [New] 存起來
+
+        # [New] 定義關閉按鈕 (放在聊天框的右上角)
+        # 假設你的聊天框位置大約在 chat_x, chat_y
+        # 這裡我們用相對位置，假設聊天框寬度是 300
+        self.btn_close = Button(
+            "UI/button_x.png", "UI/button_x_hover.png",
+            20 + 750, GameSettings.SCREEN_HEIGHT-40, # 根據你的 draw 位置微調
+            30, 30,
+            self.close
+        )
 
         # [Filled TODO] Initialize Fonts
         try:
@@ -51,6 +64,8 @@ class ChatOverlay(UIComponent):
 
     def close(self) -> None:
         self.is_open = False
+        if self.on_close_callback:
+            self.on_close_callback()
 
     def _handle_typing(self) -> None:
         """
@@ -119,51 +134,60 @@ class ChatOverlay(UIComponent):
         if self._cursor_timer >= 0.5:
             self._cursor_timer = 0.0
             self._cursor_visible = not self._cursor_visible
+        self.btn_close.update(dt)
 
-    def draw(self, screen: pg.Surface) -> None:
-        # Always draw recent messages faintly, even when closed
-        msgs = self._get_messages(8) if self._get_messages else []
-        sw, sh = screen.get_size()
-        x = 10
-        y = sh - 100
+    def draw(self, screen):
+        if not self.is_open: return
+
+        # 1. 定義「輸入框」的位置
+        input_h = 40
+        input_y = GameSettings.SCREEN_HEIGHT - input_h - 20
+        input_x = 20
+        input_w = 300
+
+        # 2. 定義「訊息顯示區」的位置
+        msg_h = 300 
+        msg_y = input_y - msg_h - 10
+        msg_x = 20
+        msg_w = 300
+
+        # --- 繪圖開始 ---
+
+        # A. 畫訊息區背景
+        s = pg.Surface((msg_w, msg_h))
+        s.set_alpha(150)
+        s.fill((0, 0, 0))
+        screen.blit(s, (msg_x, msg_y))
         
-        # Draw background for messages
-        if msgs:
-            container_w = max(100, int((sw - 20) * 0.6))
-            bg = pg.Surface((container_w, 90), pg.SRCALPHA)
-            bg.fill((0, 0, 0, 90 if self.is_open else 60))
-            _ = screen.blit(bg, (x, y))
-            # Render last messages
-            lines = list(msgs)[-8:]
-            draw_y = y + 8
-            for m in lines:
-                sender = str(m.get("from", ""))
-                text = str(m.get("text", ""))
-                surf = self._font_msg.render(f"{sender}: {text}", True, (255, 255, 255))
-                _ = screen.blit(surf, (x + 10, draw_y))
-                draw_y += surf.get_height() + 4
-        
-        # If not open, skip input field
-        if not self.is_open:
-            return
+        # B. 畫歷史訊息
+        if self._get_messages:
+            msgs = self._get_messages(10) 
             
-        # Input box
-        box_h = 28
-        box_w = max(100, int((sw - 20) * 0.6))
-        box_y = sh - box_h - 6
+            for i, msg in enumerate(msgs):
+                line_y = msg_y + 10 + i * 25
+                
+                # 組合文字
+                text_content = f"{msg.get('from', '?')}: {msg.get('text', '')}"
+                
+                # [Fix 1] 使用 self._font_msg 而不是 self.font
+                txt_surf = self._font_msg.render(text_content, True, (255, 255, 255))
+                screen.blit(txt_surf, (msg_x + 10, line_y))
+
+        # C. 畫輸入框
+        pg.draw.rect(screen, (0, 0, 0), (input_x, input_y, input_w, input_h))       
+        pg.draw.rect(screen, (255, 255, 255), (input_x, input_y, input_w, input_h), 2) 
+
+        # D. 畫正在輸入的字
+        # [Fix 2] 使用 self._input_text 而不是 self.chat_input
+        # [Fix 3] 使用 self._font_input 而不是 self.font
+        display_text = self._input_text + ("|" if self._cursor_visible else "")
+        input_surf = self._font_input.render(display_text, True, (255, 255, 255))
         
-        # Background box
-        bg2 = pg.Surface((box_w, box_h), pg.SRCALPHA)
-        bg2.fill((0, 0, 0, 160))
-        _ = screen.blit(bg2, (x, box_y))
-        
-        # [Filled TODO] Render Text
-        txt = self._input_text
-        text_surf = self._font_input.render(txt, True, (255, 255, 255))
-        _ = screen.blit(text_surf, (x + 8, box_y + 4))
-        
-        # Caret
-        if self._cursor_visible:
-            cx = x + 8 + text_surf.get_width() + 2
-            cy = box_y + 6
-            pg.draw.rect(screen, (255, 255, 255), pg.Rect(cx, cy, 2, box_h - 12))
+        # 讓文字垂直置中
+        text_y = input_y + (input_h - input_surf.get_height()) // 2
+        screen.blit(input_surf, (input_x + 10, text_y))
+
+        # E. 更新關閉按鈕的位置
+        # [Fix] Button 使用的是 hitbox 屬性
+        self.btn_close.hitbox.topleft = (msg_x + msg_w + 5, msg_y) 
+        self.btn_close.draw(screen)

@@ -123,7 +123,8 @@ class GameManager:
             "current_map": self.current_map_key,
             "player": self.player.to_dict() if self.player is not None else None,
             "bag": self.bag.to_dict(),
-            "quest": self.quest # [New] 存任務
+            "quest": self.quest ,# [New] 存任務
+            "has_fairy": self.has_fairy  # [Fix] 加上這行，把精靈狀態存進去！
         }
 
     @classmethod
@@ -180,5 +181,6 @@ class GameManager:
             "reward_coins": 500,
             "is_completed": False
         })
-
+        # [Fix] 讀取精靈狀態 (如果存檔沒寫，預設 False)
+        gm.has_fairy = data.get("has_fairy", False)
         return gm

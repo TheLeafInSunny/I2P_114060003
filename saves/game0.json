@@ -9,14 +9,19 @@
           "destination": "gym.tmx"
         },
         {
-          "x": 16,
-          "y": 28,
+          "x": 13,
+          "y": 14,
           "destination": "secret_garden.tmx"
+        },
+        {
+          "x": 55,
+          "y": 13,
+          "destination": "shop.tmx"
         }
       ],
       "player": {
-        "x": 24.0,
-        "y": 30.0
+        "x": 25.0,
+        "y": 27.0
       },
       "enemy_trainers": [
         {
@@ -42,14 +47,6 @@
           "facing": "UP",
           "max_tiles": 2,
           "sprite": "character/ow4.png"
-        },
-        {
-          "x": 10.0,
-          "y": 25.0,
-          "classification": "merchant",
-          "facing": "DOWN",
-          "max_tiles": 0,
-          "sprite": "character/ow5.png"
         }
       ]
     },
@@ -101,26 +98,50 @@
         "y": 5.0
       },
       "enemy_trainers": []
+    },
+    {
+      "path": "shop.tmx",
+      "teleport": [
+        {
+          "x": 10,
+          "y": 15,
+          "destination": "map.tmx"
+        }
+      ],
+      "player": {
+        "x": 4.0,
+        "y": 5
+      },
+      "enemy_trainers": [
+        {
+          "x": 4.0,
+          "y": 4.0,
+          "classification": "merchant",
+          "facing": "DOWN",
+          "max_tiles": 0,
+          "sprite": "character/ow10.png"
+        }
+      ]
     }
   ],
-  "current_map": "map.tmx",
+  "current_map": "shop.tmx",
   "player": {
-    "x": 23.962499999999977,
-    "y": 30.30625
+    "x": 4.0,
+    "y": 5.0
   },
   "bag": {
     "monsters": [
       {
-        "name": "Pikachu",
-        "hp": 238,
-        "max_hp": 410,
-        "level": 29,
-        "sprite_path": "menu_sprites/menusprite1.png",
+        "name": "Mega Pikachu",
+        "hp": 420,
+        "max_hp": 420,
+        "level": 30,
+        "sprite_path": "menu_sprites/menusprite2.png",
         "element": "Normal",
-        "attack": 105,
-        "defense": 30,
-        "exp": 50,
-        "next_evo_level": 30,
+        "attack": 110,
+        "defense": 35,
+        "exp": 0,
+        "next_evo_level": 0,
         "next_evo_sprite": "menu_sprites/menusprite2.png"
       },
       {
@@ -138,7 +159,7 @@
       },
       {
         "name": "Blastoise",
-        "hp": 66,
+        "hp": 0,
         "max_hp": 180,
         "level": 32,
         "sprite_path": "menu_sprites/menusprite7.png",
@@ -210,28 +231,28 @@
       },
       {
         "name": "Strength Potion",
-        "count": 4,
+        "count": 6,
         "sprite_path": "ingame_ui/potion.png",
         "effect_type": "ATK_UP",
         "value": 10
       },
       {
         "name": "Defense Potion",
-        "count": 10,
+        "count": 8,
         "sprite_path": "ingame_ui/potion.png",
         "effect_type": "DEF_UP",
         "value": 10
       },
       {
         "name": "Coins",
-        "count": 1050,
+        "count": 600,
         "sprite_path": "ingame_ui/coin.png",
         "effect_type": "NONE",
         "value": 0
       },
       {
         "name": "Pokeball",
-        "count": 10,
+        "count": 6,
         "sprite_path": "ingame_ui/ball.png",
         "effect_type": "NONE",
         "value": 0
@@ -245,5 +266,6 @@
     "current_count": 0,
     "reward_coins": 1000,
     "is_completed": false
-  }
+  },
+  "has_fairy": true
 }
