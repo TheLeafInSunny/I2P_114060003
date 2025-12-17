@@ -639,9 +639,10 @@ class GameScene(Scene):
 
     # [New] 跳出任務詢問對話框
     def prompt_quest_dialogue(self, name, description, target, reward):
+        desc_text = f"{description}\n(Warning: Accepting this will reset current quest progress!)"
         self.pending_quest_data = {
             "name": name,
-            "description": description,
+            "description": desc_text,
             "target_count": target,
             "reward_coins": reward
         }
@@ -1490,14 +1491,44 @@ class GameScene(Scene):
             title_txt = f"Quest Offer: {data['name']}"
             desc_txt = f"Objective: {data['description']}"
             reward_txt = f"Reward: ${data['reward_coins']}"
-            confirm_txt = "Do you accept this challenge?"
+            confirm_txt = "Do you accept this challenge? "
             
             # 3. 繪製文字 (一行一行畫)
             # 標題 (金色)
             screen.blit(self.font_quest.render(title_txt, True, (255, 215, 0)), (self.dialogue_rect.x + 30, self.dialogue_rect.y + 20))
             # 內容 (白色)
-            screen.blit(self.font_small.render(desc_txt, True, (255, 255, 255)), (self.dialogue_rect.x + 30, self.dialogue_rect.y + 60))
-            screen.blit(self.font_small.render(reward_txt, True, (0, 255, 0)), (self.dialogue_rect.x + 30, self.dialogue_rect.y + 90))
+            # ... (標題畫完後) ...
+
+            # [Modified] 支援換行與變色的描述繪製
+            # 1. 把描述文字依照 \n 切割成多行
+            # data['description'] 裡面已經包含了 "Warning..."
+            full_desc = data['description'] 
+            lines = full_desc.split('\n') 
+            
+            # 2. 設定起始 Y 座標
+            start_y = self.dialogue_rect.y + 60
+            
+            # 3. 用迴圈一行一行畫
+            for i, line in enumerate(lines):
+                # 預設顏色：白色
+                color = (255, 255, 255)
+                
+                # 特殊判斷：如果這行字包含 "Warning"，就變成紅色！
+                if "Warning" in line:
+                    color = (255, 50, 50) # 紅色
+                
+                # 如果是第一行，補上 "Objective: " 前綴 (看你需不需要)
+                if i == 0:
+                    text_to_render = f"Objective: {line}"
+                else:
+                    text_to_render = line # 警告那一行直接顯示
+                
+                # 渲染並畫到螢幕上 (每畫一行，Y 就往下移 25 pixel)
+                txt_surf = self.font_small.render(text_to_render, True, color)
+                screen.blit(txt_surf, (self.dialogue_rect.x + 30, start_y + i * 25))
+
+            # ... (接著繼續畫 Reward 和 Confirm) ...
+            screen.blit(self.font_small.render(reward_txt, True, (0, 255, 0)), (self.dialogue_rect.x + 30, self.dialogue_rect.y + 110))
             screen.blit(self.font_small.render(confirm_txt, True, (200, 200, 200)), (self.dialogue_rect.x + 30, self.dialogue_rect.y + 140))
             
             # 4. 繪製按鈕
